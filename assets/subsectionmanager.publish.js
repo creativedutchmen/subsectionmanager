@@ -378,25 +378,33 @@
 			};
 			
 			var show = function(content, editor, iframe) {
+				var item = editor.prev('li');
 				
 				// Check editor presence
 				if(editor.is(':visible')) {
 					setTimeout(function() {
 	
 						// Check if editor will be closed					
-						if(editor.prev('li').is('.active') || editor.prev('li').is('.new')) {
-							var height = content.find('#header').innerHeight() + content.find('#contents').innerHeight();
-						
-							// Show hidden iframe
-							iframe.height(height).animate({
-								opacity: 1
-							}, 'fast');
+						if((item.is('.active') || item.is('.new')) && !item.is('.destructing')) {
+							var height = content.find('#header').innerHeight() + content.find('#contents').innerHeight();				
 							
-							// Adjust editor height
-							editor.stop().animate({
-								height: height
-							}, 'fast');
-	
+							// Compare heights
+							if(iframe.data('height') != height) {
+							
+								// Show hidden iframe
+								iframe.height(height).animate({
+									opacity: 1
+								}, 'fast');
+								
+								// Adjust editor height
+								editor.stop().animate({
+									height: height
+								}, 'fast');
+							
+								// Store height
+								iframe.data('height', height);
+							}
+		
 							// Loop
 							show(content, editor, iframe);
 						}
