@@ -155,6 +155,7 @@
 				var content = iframe.contents();
 
 				// Adjust interface
+				content.find('html').css('overflow', 'hidden');
 				content.find('body').addClass('inline subsection');
 				content.find('h1, h2, #nav, #notice:not(.error):not(.success), #notice a, #footer').remove();
 				content.find('fieldset input:first').focus();
@@ -181,14 +182,8 @@
 				// Edit item
 				else {			
 				
-					// Set height
-					var height = content.find('#wrapper').outerHeight() || iframe.height();
-					iframe.height(height).animate({
-						opacity: 1
-					}, 'fast');
-					editor.animate({
-						height: height
-					}, 'fast');
+					// Show editor
+					show(content, editor, iframe);	
 					
 					// Handle inline image preview
 					if(content.find('body > img').width() > iframe.width()) {
@@ -367,6 +362,34 @@
 						}				
 					}
 				});
+			};
+			
+			var show = function(content, editor, iframe) {
+				
+				// Check editor presence
+				if(editor.is(':visible')) {
+					setTimeout(function() {
+	
+						// Check if editor will be closed					
+						if(editor.prev('li').is('.active')) {
+							var height = content.find('#header').innerHeight() + content.find('#contents').innerHeight();
+						
+							// Show hidden iframe
+							iframe.height(height).animate({
+								opacity: 1
+							}, 'fast');
+							
+							// Adjust editor height
+							editor.stop().animate({
+								height: height
+							}, 'fast');
+	
+							// Loop
+							show(content, editor, iframe);
+						}
+						
+					}, 250);					
+				}
 			};
 			
 			// Synchronize lists
