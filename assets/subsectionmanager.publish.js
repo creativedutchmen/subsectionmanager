@@ -70,7 +70,12 @@
 				var item = $(this),
 					target = $(event.target),
 					editor = item.next('.drawer');
-				
+					
+				// If stage is draggable, don't open editor when the handle is clicked
+				if(stage.is('.draggable') && $(event.toElement).is('span')) {
+					return true;
+				}
+							
 				// Don't open editor for item that will be removed
 				if(target.is('.destructor')) {
 					return true;
@@ -141,7 +146,15 @@
 			});
 			
 			// Sorting
-			selection.bind('orderstart.stage', function() {
+			selection.bind('orderstart.stage', function(event, item) {
+				if(item.is('.new')) {
+					return false;
+				}
+				
+				// Remove new items
+				selection.find('li.new').trigger('destruct');
+
+				// Close other drawers
 				selection.find('li.active').removeClass('active');
 				selection.find('li.drawer').slideUp('fast', function() {
 					$(this).remove();
@@ -371,7 +384,7 @@
 					setTimeout(function() {
 	
 						// Check if editor will be closed					
-						if(editor.prev('li').is('.active')) {
+						if(editor.prev('li').is('.active') || editor.prev('li').is('.new')) {
 							var height = content.find('#header').innerHeight() + content.find('#contents').innerHeight();
 						
 							// Show hidden iframe
@@ -387,7 +400,6 @@
 							// Loop
 							show(content, editor, iframe);
 						}
-						
 					}, 250);					
 				}
 			};
