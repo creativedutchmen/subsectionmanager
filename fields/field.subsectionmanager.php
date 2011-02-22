@@ -718,6 +718,28 @@
 				return parent::prepareTableValue(array('value' => ($count > 1) ? $count . ' ' . __('items') : $count . ' ' . __('item')), $link);
 			}
 		}
+		
+		public function buildDSRetrivalSQL($data, &$joins, &$where, $andOperation=false) {
+		
+		    // Current field id
+		    $field_id = $this->get('id');
+		
+		    // Filters connected with AND
+		    if($andOperation) {
+		        foreach($data as $key => $value) {
+		            $joins .= " LEFT JOIN `tbl_entries_data_$field_id` AS `t$field_id$key` ON (`e`.`id` = `t$field_id$key`.entry_id) ";
+		            $where .= " AND `t$field_id$key`.relation_id = '$value' ";
+		        }
+		    }
+		
+		    // Filters connected with OR
+		    else {
+		        $joins .= " LEFT JOIN `tbl_entries_data_$field_id` AS `t$field_id` ON (`e`.`id` = `t$field_id`.entry_id) ";
+		        $where .= " AND `t$field_id`.relation_id IN ('" . @implode("', '", $data) . "') ";
+		    }
+		
+		    return true;
+		}  		
 
 		/**
 		 * Append the formatted xml output of this field as utilized as a data source.
