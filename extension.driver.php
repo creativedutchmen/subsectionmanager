@@ -276,13 +276,13 @@
 
 			// Get parent data
 			$fields = array();
-			foreach($parents as $entry) {
+			foreach((array)$parents as $entry) {
 				$data = $entry->getData();
 				
 				// Get relation id
-				foreach($data as $field => $settings) {
+				foreach((array)$data as $field => $settings) {
 					if(isset($settings['relation_id'])) {
-						foreach($settings['relation_id'] as $relation_id) {
+						foreach((array)$settings['relation_id'] as $relation_id) {
 							$fields[$field][] = $relation_id;
 						}
 					}
@@ -290,7 +290,7 @@
 			}
 			
 			// Store entries	
-			foreach($fields as $field => $relation_id) {
+			foreach((array)$fields as $field => $relation_id) {
 	
 				// Check for already loaded entries
 				$entry_id = array_diff($relation_id, array_keys(self::$storage['entries']));
@@ -303,7 +303,7 @@
 				
 					// Fetch entries
 					$entries = self::$entryManager->fetch($entry_id, $subsection_id);
-					foreach($entries as $entry) {
+					foreach((array)$entries as $entry) {
 						self::$storage['entries'][$entry->get('id')] = $entry;
 					}
 				}
