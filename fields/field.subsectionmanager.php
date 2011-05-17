@@ -8,6 +8,7 @@
 	 */
 	if(!defined('__IN_SYMPHONY__')) die('<h2>Symphony Error</h2><p>You cannot directly access this file</p>');
 
+	require_once(EXTENSIONS . '/subsectionmanager/extension.driver.php');
 	require_once(EXTENSIONS . '/subsectionmanager/lib/class.subsectionmanager.php');
 	if(!class_exists('Stage')) {
 		require_once(EXTENSIONS . '/subsectionmanager/lib/stage/class.stage.php');
