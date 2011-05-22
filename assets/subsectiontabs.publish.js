@@ -39,7 +39,10 @@
 		
 		// Set height
 		if(state) {
-			tabs.height(state.height);
+			console.log(state);
+			if(state.height > 0){
+				tabs.height(state.height);
+			}
 		}
 		
 		// Clean up page and document title
@@ -94,12 +97,12 @@
 			control.addClass('selected');
 				
 			// Hide subsections
-			subsections.hide();
+			//subsections.hide();
 
 			// Tab already loaded
 			if(current.size() > 0) {
+				//current.show();
 				resize(current);
-				current.show();
 			}
 			
 			// Tab not loaded yet
@@ -120,7 +123,7 @@
 
 				// Deselect other tabs
 				controls.find('li').removeClass('selected');
-				subsection.hide();
+				//subsection.hide();
 
 				// Load new tab
 				control.hide().insertBefore(creator);
@@ -318,9 +321,6 @@
 				content.find('#contents').resize(function() {
 					var height = $(this).height();
 					subsection.height(height);
-					tabs.animate({
-						'height': height
-					}, 'fast');
 				});
 				
 				// Set height
@@ -516,15 +516,16 @@
 			var height, storage;
 			
 			// Resize tab
-			subsection.show();
-			height = getHeight(subsection);
 			subsection.height(height);
-			tabs.animate({
-				'height': height
-			}, 'fast');
-			
+			tabs.animate({'height':0},'fast', function(){
+				subsection.siblings().hide();
+				subsection.show();
+				height = getHeight(subsection);
+				remember(subsection, height);
+				$(this).animate({'height':height},'fast');
+			});			
 			// Store current tab
-			remember(subsection, height);
+			
 		};
 		
 		var getHeight = function(subsection) {
@@ -594,7 +595,8 @@
 				active;
 				
 			// Set tabs height
-			if(state.height) {
+			if(state.height>0) {
+				console.log(state);
 				tabs.height(state.height);
 			}
 				
