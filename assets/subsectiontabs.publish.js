@@ -235,6 +235,28 @@
 			}
 		});
 		
+		var publish_tabs = Symphony.Context.get('publish-tabs');
+		var publish_tabs_controls = $('ul#publish-tabs-controls');
+		for(tab in publish_tabs) {
+			var tabid = field.attr('id');
+			$.each(publish_tabs[tab], function(){
+				if($.inArray(tabid, this) > -1){
+					publish_tabs_controls.find('li.' + tab).die('click');
+					publish_tabs_controls.find('li.' + tab).live('click', function(){
+						controls.show();
+						tabs.show();
+					});				
+					return true;
+				}
+				else{
+					publish_tabs_controls.find('li.' + tab).live('click', function(){
+						controls.hide();
+						tabs.hide();
+					});
+				}
+			});
+		}
+		
 	/*-----------------------------------------------------------------------*/
 	
 		// Create control
