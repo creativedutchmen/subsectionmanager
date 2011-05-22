@@ -189,13 +189,13 @@
 		
 			// Default Data Source
 			if($parent == 'DataSource') {
-				$this->__parseSubsectionFields($context['datasource']);
+				$this->__parseSubsectionFields($context['datasource']->dsParamINCLUDEDELEMENTS, $context['datasource']->dsParamROOTELEMENT, $context['datasource']);
 			}
 			
 			// Union Data Source
 			elseif($parent == 'UnionDatasource') {
 				foreach($context['datasource']->datasources as $datasource) {
-					$this->__parseSubsectionFields($datasource['datasource']);
+					$this->__parseSubsectionFields($datasource['datasource']->dsParamINCLUDEDELEMENTS, $datasource['datasource']->dsParamROOTELEMENT, $datasource['datasource']);
 				}
 			}
 
@@ -209,46 +209,64 @@
 		 * @param DataSource $datasource
 		 *	The data source class to parse
 		 */
-		private function __parseSubsectionFields(&$datasource) {
+		private function __parseSubsectionFields($fields, $context, $datasource = null) {
 
 			// Parse includes elements
-			foreach($datasource->dsParamINCLUDEDELEMENTS as $index => $included) {
-				list($subsection, $field) = explode(': ', $included, 2);
+			foreach($fields as $index => $included) {
+				list($subsection, $field, $remainder) = explode(': ', $included, 3);
 				
-				// Get subsection fields
-				if(strstr($field, ': ') !== false) {
-					
-					// Get id
-					$id = Symphony::Database()->fetch( 
-						"(SELECT t1.`subsection_id`, t1.field_id
-							FROM `tbl_fields_subsectionmanager` AS t1 
-							INNER JOIN `tbl_fields` AS t2 
-							WHERE t2.`element_name` = '{$subsection}'
-							AND t1.`field_id` = t2.`id`
-							LIMIT 1) 
-						UNION
-						(SELECT t1.`subsection_id`, t1.field_id
-							FROM `tbl_fields_subsectiontabs` AS t1 
-							INNER JOIN `tbl_fields` AS t2 
-							WHERE t2.`element_name` = '{$subsection}'
-							AND t1.`field_id` = t2.`id`
-							LIMIT 1) 
-						LIMIT 1"
-					);
+				// Fetch fields
+				if($field != 'formatted' && $field != 'unformatted') {
 
 					// Get field id and mode
-					list($field, $mode) = explode(': ', $field, 2);
-					$subfield_id = self::$entryManager->fieldManager->fetchFieldIDFromElementName($field, $id[0]['subsection_id']);
+					if($remainder == 'formatted' || $remainder == 'unformatted' || empty($remainder)) {
+						$this->__fetchFields($context, $subsection, $field, $remainder);
+					}
+					else {
+						$this->__fetchFields($context, $subsection, $field);
+						$this->__parseSubsectionFields(array($field . ': ' . $remainder), $context);
+					}
 
-					// Store field data
-					self::storeSubsectionFields($id[0]['field_id'], $subfield_id, $mode);
-	
 					// Set a single field call for subsection fields
-					unset($datasource->dsParamINCLUDEDELEMENTS[$index]);
-					if(!in_array($fields[0], $datasource->dsParamINCLUDEDELEMENTS)) {
-						$datasource->dsParamINCLUDEDELEMENTS[$index] = $subsection;
+					if(isset($datasource)) {
+						unset($datasource->dsParamINCLUDEDELEMENTS[$index]);
+
+						$storage = $subsection . ': ' . $context;
+						if(!in_array($storage, $datasource->dsParamINCLUDEDELEMENTS)) {
+							$datasource->dsParamINCLUDEDELEMENTS[$index] = $storage;
+						}
 					}
 				}
+			}
+		}
+		
+		private function __fetchFields($context, $subsection, $field, $mode = '') {
+			
+			// Get id
+			$id = Symphony::Database()->fetch( 
+				"(SELECT t1.`subsection_id`, t1.field_id
+					FROM `tbl_fields_subsectionmanager` AS t1 
+					INNER JOIN `tbl_fields` AS t2 
+					WHERE t2.`element_name` = '{$subsection}'
+					AND t1.`field_id` = t2.`id`
+					LIMIT 1) 
+				UNION
+				(SELECT t1.`subsection_id`, t1.field_id
+					FROM `tbl_fields_subsectiontabs` AS t1 
+					INNER JOIN `tbl_fields` AS t2 
+					WHERE t2.`element_name` = '{$subsection}'
+					AND t1.`field_id` = t2.`id`
+					LIMIT 1) 
+				LIMIT 1"
+			);
+			
+			// Get subfield id
+			$subfield_id = self::$entryManager->fieldManager->fetchFieldIDFromElementName($field, $id[0]['subsection_id']);
+
+			// Store field data
+			$field_id = $id[0]['field_id'];
+			if(!is_array(self::$storage['fields'][$context][$field_id][$subfield_id])) {
+				self::storeSubsectionFields($context, $field_id, $subfield_id, $mode);
 			}
 		}
 		
@@ -262,8 +280,10 @@
 		 * @param string $mode
 		 *	Subfield mode, e. g. 'formatted' or 'unformatted'
 		 */
-		public static function storeSubsectionFields($field_id, $subfield_id, $mode) {
-			self::$storage['fields'][$field_id][$subfield_id][] = $mode;
+		public static function storeSubsectionFields($context, $field_id, $subfield_id, $mode) {
+			if(!empty($context) && !empty($field_id) && !empty($subfield_id)) {
+				self::$storage['fields'][$context][$field_id][$subfield_id][] = $mode;
+			}
 		}
 
 		/**
@@ -276,13 +296,15 @@
 
 			// Get parent data
 			$fields = array();
-			foreach((array)$parents as $entry) {
+			foreach($parents as $entry) {
 				$data = $entry->getData();
 				
 				// Get relation id
-				foreach((array)$data as $field => $settings) {
+				foreach($data as $field => $settings) {
 					if(isset($settings['relation_id'])) {
-						foreach((array)$settings['relation_id'] as $relation_id) {
+						if(!is_array($settings['relation_id'])) $settings['relation_id'] = array($settings['relation_id']);
+					
+						foreach($settings['relation_id'] as $relation_id) {
 							$fields[$field][] = $relation_id;
 						}
 					}
@@ -290,7 +312,7 @@
 			}
 			
 			// Store entries	
-			foreach((array)$fields as $field => $relation_id) {
+			foreach($fields as $field => $relation_id) {
 	
 				// Check for already loaded entries
 				$entry_id = array_diff($relation_id, array_keys(self::$storage['entries']));
@@ -303,10 +325,8 @@
 				
 					// Fetch entries
 					$entries = self::$entryManager->fetch($entry_id, $subsection_id);
-					foreach((array)$entries as $entry) {
-						if(is_object($entry)){
-							self::$storage['entries'][$entry->get('id')] = $entry;
-						}
+					foreach($entries as $entry) {
+						self::$storage['entries'][$entry->get('id')] = $entry;
 					}
 				}
 			}
