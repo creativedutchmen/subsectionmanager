@@ -39,7 +39,7 @@
 		
 		// Set height
 		if(state) {
-			console.log(state);
+			//console.log(state);
 			if(state.height > 0){
 				tabs.height(state.height);
 			}
@@ -318,10 +318,7 @@
 				});
 				
 				// Resize frame
-				content.find('#contents').resize(function() {
-					var height = $(this).height();
-					subsection.height(height);
-				});
+				content.find('#contents').resize();
 				
 				// Set height
 				if(current == selected) {
@@ -514,18 +511,14 @@
 		// Resize tab
 		var resize = function(subsection) {
 			var height, storage;
-			
-			// Resize tab
-			subsection.height(height);
-			tabs.animate({'height':0},'fast', function(){
-				subsection.siblings().hide();
-				subsection.show();
-				height = getHeight(subsection);
-				remember(subsection, height);
-				$(this).animate({'height':height},'fast');
-			});			
-			// Store current tab
-			
+			subsection.siblings().fadeOut('fast', function(){
+				subsection.fadeIn('fast', function(){
+					$(this).css({'height':getHeight(subsection)});
+					tabs.animate({'height':getHeight(subsection)}, 'fast');
+					remember(subsection, height);
+				});
+			});
+		
 		};
 		
 		var getHeight = function(subsection) {
