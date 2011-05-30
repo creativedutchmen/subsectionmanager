@@ -46,6 +46,7 @@
 		}
 		
 		// Clean up page and document title
+		/*
 		if(title.text() != Symphony.Language.get('Untitled')) {
 			fragments = title.text().split(' (');
 			fragments.splice(fragments.length - 1, 1);
@@ -63,7 +64,7 @@
 			fragments = document.title.split(' – ');
 			fragments.splice(fragments.length - 1, 1);
 			document.title = fragments.join(' – ') + ' – ' + headline;
-		}
+		}*/
 
 	/*-----------------------------------------------------------------------*/
 		
