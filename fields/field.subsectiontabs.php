@@ -355,30 +355,29 @@
 			
 				// Create item
 				$item = new XMLElement('item', NULL, array('name' => $name, 'handle' => $handle));
-				$subsection->appendChild($item);
 
 				// Populate entry element
 				$entry = extension_subsectionmanager::$storage['entries'][$entry_id];
 				$item->setAttribute('id', $entry_id);
 				
-				if(!empty($entry) && !empty(extension_subsectionmanager::$storage['fields'][$context][$this->get('id')])) {
-					foreach(extension_subsectionmanager::$storage['fields'][$context][$this->get('id')] as $field_id => $modes) {
-						$entry_data = $entry->getData($field_id);
+				if(!empty($entry)) {
+					foreach($entry->getData() as $field_id => $entry_data) {
 						$field = $entryManager->fieldManager->fetch($field_id);
-						
+
 						// No modes
 						if(empty($modes) || empty($modes[0])) {
-							$field->appendFormattedElement($item, $entry_data, $encode, $context, $entry_id);
+							$field->appendFormattedElement($item, $entry_data);
 						}
-						
+
 						// With modes
 						else {
 							foreach($modes as $mode) {
-								$field->appendFormattedElement($item, $entry_data, $encode, $mode, $entry_id);
+								$field->appendFormattedElement($item, $entry_data);
 							}
 						}						
 					}
 				}
+				$subsection->appendChild($item);
 			}
 			$wrapper->appendChild($subsection);
 		}

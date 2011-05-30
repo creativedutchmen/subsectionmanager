@@ -589,7 +589,6 @@
 				
 			// Set tabs height
 			if(state.height>0) {
-				console.log(state);
 				tabs.height(state.height);
 			}
 				
