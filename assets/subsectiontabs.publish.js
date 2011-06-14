@@ -42,26 +42,6 @@
 			tabs.height(state.height);
 		}
 		
-		// Clean up page and document title
-		if(title.text() != Symphony.Language.get('Untitled')) {
-			fragments = title.text().split(' (');
-			fragments.splice(fragments.length - 1, 1);
-			
-			// Get headline
-			headline = fragments.join(' (');
-			if(headline == '') {
-				headline = Symphony.Language.get('Untitled');
-			}
-			
-			// Set page title
-			title.text(headline);
-			
-			// Set document title
-			fragments = document.title.split(' – ');
-			fragments.splice(fragments.length - 1, 1);
-			document.title = fragments.join(' – ') + ' – ' + headline;
-		}
-
 	/*-----------------------------------------------------------------------*/
 		
 		// Load tab
