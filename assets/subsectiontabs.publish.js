@@ -16,17 +16,18 @@
 	 * @source: http://github.com/nilshoerrmann/subsectionmanager
 	 */
 	$(document).ready(function() {
-		var field = $('div.field-subsectiontabs'),
+		var body = $('body'),
+			field = $('div.field-subsectiontabs'),
 			label = field.find('label'),
 			handle = label.attr('data-handle'),
-			title = $('h2:first'),
+			title = $('h2:not(#documenter-title)').filter(':first'),
 			storage = field.find('ul'),
 			references = field.find('a'),
 			state, controls, tabs,
-			fragments, headline;
+			fragments, headline, chosen;
 			
 		// Set context
-		$('body').addClass('subsectiontabs');
+		body.addClass('subsectiontabs');
 			
 		// Switch display modes
 		if(location.search != '?debug') {
@@ -273,12 +274,14 @@
 				});
 				
 				// Resize frame
-				content.find('#contents').resize(function() {
-					var height = $(this).height();
-					subsection.height(height);
-					tabs.animate({
-						'height': height
-					}, 'fast');
+				content.find('#contents').resize(function(event) {
+					if(!body.is('.resizing, .saving')) {
+						var height = $(this).height();
+						subsection.height(height);
+						tabs.animate({
+							'height': height
+						}, 'fast');
+					}
 				});
 				
 				// Set height
@@ -396,6 +399,9 @@
 				button = tab.contents().find('div.actions input'),
 				name = $.trim(control.find('span').text())
 				post = tab.contents().find('form').serialize();
+				
+			// Set status
+			body.addClass('saving');
 			
 			// Tab loaded
 			if(tab.size() > 0 && post != tab.data('post') && !control.is('.delete')) {
@@ -474,12 +480,15 @@
 			var height, storage;
 			
 			// Resize tab
+			body.addClass('resizing');
 			subsection.show();
 			height = getHeight(subsection);
 			subsection.height(height);
 			tabs.animate({
 				'height': height
-			}, 'fast');
+			}, 'fast', function() {
+				body.removeClass('resizing');
+			});
 			
 			// Store current tab
 			remember(subsection, height);
@@ -542,7 +551,7 @@
 		}
 
 		// Add controls
-		storage.find('li').each(function(count) {
+		chosen = storage.find('li').each(function(count) {
 			var item = $(this),
 				name = item.find('input:eq(1)').val(),
 				id = item.find('input:eq(0)').val(),
@@ -577,7 +586,12 @@
 			
 			// Preload tab
 			load(control);
-		});
+		}).filter('.selected');
+		
+		// Select only one tab at a time
+		if(chosen.size() != 1) {
+			storage.find('li:first').click();
+		}
 		
 		// Allow dynamic controls
 		if(label.is('.allow_dynamic_tabs')) {

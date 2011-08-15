@@ -20,7 +20,6 @@
 		// Initialize Subsection Manager
 		$('div.field-subsectionmanager').each(function() {
 			var manager = $(this),
-				storage = manager.find('select'),
 				stage = manager.find('div.stage'),
 				selection = stage.find('ul.selection'),
 				queue = stage.find('div.queue'),
@@ -74,7 +73,7 @@
 						editor = item.next('.drawer');
 					
 					// Don't open editor for item that will be removed
-					if(target.is('.destructor')) {
+					if(target.is('.destructor, input')) {
 						return true;
 					}
 					
@@ -93,6 +92,48 @@
 					}
 					
 					// Don't follow links
+					return false;
+				});
+			}
+
+			// Add quantifiers
+			if(stage.is('.quantifiable, .nonquantifiable')) {
+/*
+				var field_id = manager.attr('id').replace('field-','');
+
+				$('li:not(.new,.empty,.drawer,.message)', selection).each(function(index, item){
+					var value = $(this).attr('data-value'),
+						quantity = manager.find('input.subsectionmanager.storage[name$="\\[' + value + '\\]"]');
+
+					$(this).append(quantity);
+				});
+				
+				// It's possible that the empty message is a create template
+				if(empty.is('.template.create')) {
+					empty.append(quantifier.clone());
+				}
+*/
+				stage.delegate('input.storage', 'click', function(event){
+					var item = $(this),
+						width = item.innerWidth(),
+						halfheight = Math.ceil(item.innerHeight() / 2),
+						mod = 1;
+
+					if(event.offsetX >= width-15) {
+						if(event.offsetY > halfheight) {
+							mod = -1;
+						}
+						item.val(Math.max((item.val() * 1) + mod, 1));
+					}
+				}).delegate('input.storage', 'keydown', function(event){
+					if(event.which != 40 /* Up Arrow */ && event.which != 38 /* Down Arrow */) return true;
+
+					var item = $(this),
+						mod = 1;
+
+					if(event.which == 40) mod = -1;
+					item.val(Math.max((item.val() * 1) + mod, 1));
+
 					return false;
 				});
 			}
@@ -153,7 +194,25 @@
 				selection.find('li.drawer').slideUp('fast', function() {
 					$(this).remove();
 				});
-			});			
+			});
+
+			selection.bind('orderstop.stage', function() {
+				var stock = manager.find('input.subsectionmanager.storage'),
+					last = stock.find('.template'),
+					storage = last.parent();
+
+				selection.find('li').not('.drawer').not('.new').not('.message').not('empty').each(function(index, item) {
+					var item = $(item),
+						id = item.attr('data-value'),
+						stored = stock.filter('[value="' + id + '"]');
+
+					// Existing item
+					if(stored.size() == 1) {
+						stored.insertAfter(last);
+						last = stored;
+					}
+				});
+			});
 								
 		/*-----------------------------------------------------------------------*/
 
@@ -171,13 +230,13 @@
 				
 				// Frame resizing
 				content.find('#contents').resize(function() {
-					var height = $(this).height(),
-						body = content.find('body');
-					iframe.height(height);
-					editor.animate({
-						'height': height
-					}, 'fast');
+					if(!iframe.is('.saving')) {
+						resize(content, editor, iframe);
+					}
 				});
+				
+				// Resize on load
+				resize(content, editor, iframe);
 			
 				// Delete item
 				if(item.is('.delete')) {
@@ -218,7 +277,7 @@
 								
 					// Fetch saving
 					content.find('div.actions input').click(function() {
-						iframe.animate({
+						iframe.addClass('saving').animate({
 							opacity: 0.01
 						}, 'fast', function() {
 							iframe.css('visibility', 'hidden');
@@ -259,9 +318,21 @@
 					});
 				}
 			};
+		
+			var resize = function(content, editor, iframe) {
+				var height = content.find('#contents').height() + content.find('#header .error').height(),
+					body = content.find('body');
+				
+				if(editor.data('height') != height) {	
+					iframe.height(height);
+					editor.data('height', height).animate({
+						'height': height
+					}, 'fast');
+				}
+			};
 			
 			// Browse queue
-			var browse = function() {
+			var browse = function(async) {
 				var list = queue.find('ul');
 
 				// Append queue if it's not present yet
@@ -270,7 +341,7 @@
 
 					// Get queue items
 					$.ajax({
-						async: false,
+						async: (async == true ? true : false),
 						type: 'GET',
 						dataType: 'html',
 						url: Symphony.Context.get('root') + '/symphony/extension/subsectionmanager/get/',
@@ -396,26 +467,27 @@
 			
 			// Synchronize lists
 			var sync = function() {
-				var stock = storage.find('option').removeAttr('selected');
-								
-				selection.find('li').not('.drawer').not('.new').not('.message').not('empty').each(function(index, item) {
+				var stock = manager.find('input.subsectionmanager.storage').not('.template'),
+					template = manager.find('input.subsectionmanager.storage.template'),
+					nonquantifiable = stage.is('.nonquantifiable');
+
+				selection.find('li:not(.drawer,.new,.message,.empty)').each(function(index, item) {
 					var item = $(item),
 						id = item.attr('data-value'),
-						stored = stock.filter('[value="' + id + '"]');
+						stored = item.find('input[name$="\\[' + id + '\\]"]'),
+						itemname = '';
 
-					// Existing item
-					if(stored.size() == 1) {
-						stored.attr('selected', 'selected');
-					}
-					
 					// New item
-					else {
-						$('<option />').attr('selected', true).val(id).text(Symphony.Language.get('New item') + ' ' + id).appendTo(storage);
+					if(stored.length < 1) {
+						stored = template.clone();
+						itemname = stored.attr('name').replace(/\[quantity\]$/, '['+id+']');
+						stored.val("1").attr('value', "1").attr('name', itemname).removeClass('template').appendTo(item);
 					}
 				});
-				
-				// Activate Storage
-				storage.removeAttr('disabled');
+
+				// Something keeps adding "display: inline-block;" to input of newly created items,
+				// so we have to hide it manually :(.
+				if(nonquantifiable) stock.hide();
 			};
 			
 			// Dropping items
@@ -478,7 +550,7 @@
 		/*-----------------------------------------------------------------------*/
 			
 			// Preload queue items
-			browse();
+			browse(true);
 			
 		});
 
